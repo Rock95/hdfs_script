@@ -1,29 +1,32 @@
 #! /bin/bash
 #****************************************************************#
-# ScriptName: start-hdfs-minicluster.sh
+# ScriptName: hdfs-minicluster.sh
 #***************************************************************#
 HADOOP_HOME=${HADOOP_HOME}
 SHELL_NAME=$0
-SHELL_LOG="/var/log/mock_hdfs_cluster.log"
-LOCK_FILE="/tmp/${SHELL_NAME}.lock"
+SHELL_LOG="/var/log/mock-hdfs-cluster.log"
 HDFS_TEST_CONF_DIR="/tmp"
 
+NN_PORT=20300
+DN_NUM=3
 
+LOCK_FILE="/tmp/${SHELL_NAME}.lock"
 PROG=$(basename "$0")
+
 function shell_log(){
     LOG_INFO=$1
     echo "$(date "+%Y-%m-%d") $(date "+%H:%M:%S") : ${SHELL_NAME} : ${LOG_INFO}" | tee -ai ${SHELL_LOG} 2>&1
 }
 
 function usage(){
-        echo "Usage: $PROG (subcommand)
+        echo "Usage: ${PROG} (subcommand)
     Subcommands:
         help              Prints this message
         start             Start hdfs minicluster
+                          HADOOP_HOME=/xx/xx sh $0 start
         status            Get hdfs minicluster status
         stop              Stop hdfs minicluster
 " 1>&2
-
 }
 
 function pre_check(){
@@ -57,7 +60,7 @@ function status_minicluster(){
 
 function stop_minicluster(){
     status_minicluster
-    if [[ "X${cluster_pid}" != "X" ]];then
+    if [[ x"${cluster_pid}x" != "xx" ]];then
         stop_cmd="kill -9 ${cluster_pid}"
         shell_log "${stop_cmd}"
         eval "${stop_cmd}"
@@ -75,9 +78,11 @@ function start_minicluster(){
     rm -f $HDFS_TEST_CONF_DIR/core-site.xml 
     ${hadoop} jar ${HDFS_TEST_JAR} \
     org.apache.hadoop.test.MiniDFSClusterManager \
-    -format -nnport 20300 \
+    -format \
+    -nnport ${NN_PORT} \
+    -datanodes ${DN_NUM} \
     -writeConfig $HDFS_TEST_CONF_DIR/core-site.xml \
-    > ./hdfs-mini-cluster.out 2>&1 &
+    > ./hdfs-minicluster.out 2>&1 &
 
     local mini_cluster_pid=$!
     for i in {1..15}; do
@@ -101,7 +106,6 @@ function hdfs_info(){
 main() {
 
     subcommand="$1"
-    echo $subcommand
     if [ x"${subcommand}x" == "xx" ]; then
         subcommand="help"
     else
@@ -132,4 +136,3 @@ main() {
 
 main "$@"
 exit 0
-
